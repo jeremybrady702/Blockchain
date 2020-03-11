@@ -1,9 +1,10 @@
 import hashlib
-import requests
-
+from flask import Flask, jsonify, request
+from blockchain import *
 import sys
 import json
 
+crypto = 0
 
 def proof_of_work(block):
     """
@@ -13,7 +14,7 @@ def proof_of_work(block):
     in an effort to find a number that is a valid proof
     :return: A valid proof for the provided block
     """
-    pass
+    return blockchain.proof_of_work(block)
 
 
 def valid_proof(block_string, proof):
@@ -27,7 +28,7 @@ def valid_proof(block_string, proof):
     correct number of leading zeroes.
     :return: True if the resulting hash is a valid proof, False otherwise
     """
-    pass
+    return blockchain.valid_proof(block_string, proof)
 
 
 if __name__ == '__main__':
@@ -45,7 +46,7 @@ if __name__ == '__main__':
 
     # Run forever until interrupted
     while True:
-        r = requests.get(url=node + "/last_block")
+        r = request.get(url=node + "/last_block")
         # Handle non-json response
         try:
             data = r.json()
@@ -57,14 +58,27 @@ if __name__ == '__main__':
 
         # TODO: Get the block from `data` and use it to look for a new proof
         # new_proof = ???
+        block = data['last_block']
+        new_proof = proof_of_work(block)
 
         # When found, POST it to the server {"proof": new_proof, "id": id}
         post_data = {"proof": new_proof, "id": id}
 
-        r = requests.post(url=node + "/mine", json=post_data)
+        r = request.post(url=node + "/mine", json=post_data)
         data = r.json()
 
         # TODO: If the server responds with a 'message' 'New Block Forged'
         # add 1 to the number of coins mined and print it.  Otherwise,
         # print the message from the server.
-        pass
+        try:
+            data = r.json()
+        except ValueError:
+            print("Error:  Non-json response")
+            print("Response returned:")
+            print(r)
+            break
+
+        if data['message'] == 'New Block Forged':
+            crypto += 1
+            print('Received block reward of 1, total coins: ', crypto)
+            print(data)
